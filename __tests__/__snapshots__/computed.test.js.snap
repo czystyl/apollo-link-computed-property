@@ -1,12 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`if scheam works 1`] = `
+exports[`return computed property 1`] = `
 Object {
   "data": Object {
     "me": Object {
+      "__typename": "User",
       "firstName": "John",
+      "fullName": "John _&_&_ Doe",
       "lastName": "Doe",
+      Symbol(id): "$ROOT_QUERY.me",
     },
+    Symbol(id): "ROOT_QUERY",
   },
+  "loading": false,
+  "networkStatus": 7,
+  "stale": false,
 }
 `;
