@@ -13,8 +13,7 @@
     "lint": "eslint . --ignore-path .gitignore"
   },
   "peerDependencies": {
-    "graphql": "^0.13.2",
-    "graphql-tools": "^2.24.0"
+    "apollo-client": "^2.2.8"
   },
   "devDependencies": {
     "apollo-cache-inmemory": "^1.1.12",
