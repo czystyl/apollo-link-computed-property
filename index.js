@@ -53,10 +53,19 @@ class ComputedPropertyLink extends ApolloLink {
     );
   }
 
-  _getDirectivesFromDocument(doc) {
+  _getDirectivesFromDoc(doc) {
     checkDocument(doc);
 
     return getDirectivesFromDocument([{ name: this.directiveName }], doc);
+  }
+
+  _getDirectiveSettings(doc) {
+    checkDocument(doc);
+
+    const onlyDirectiveDeclaration = this._getDirectivesFromDoc(doc);
+    const mainDefinition = getMainDefinition(onlyDirectiveDeclaration);
+
+    return this._getComputedFields(mainDefinition);
   }
 
   request(operation, forward) {
@@ -64,13 +73,7 @@ class ComputedPropertyLink extends ApolloLink {
       return forward(operation);
     }
 
-    const onlyDirectivesDefinition = this._getDirectivesFromDocument(
-      operation.query
-    );
-
-    const mainDefinition = getMainDefinition(onlyDirectivesDefinition);
-
-    const computed = this._getComputedFields(mainDefinition);
+    const directiveSetting = this._getDirectiveSettings(operation.query);
 
     operation.query = this._removeDirective(operation.query);
 
@@ -83,24 +86,23 @@ class ComputedPropertyLink extends ApolloLink {
 
           for (const resField in data) {
             if (Object.prototype.hasOwnProperty.call(data, resField)) {
-              computed.forEach(computedField => {
-                if (!data[computedField.name]) {
+              directiveSetting.forEach(computed => {
+                if (!data[computed.name]) {
                   set(
                     response,
-                    `data.${this.mainDefinitionName}.${computedField.name}`,
-                    computedField.value
+                    `data.${this.mainDefinitionName}.${computed.name}`,
+                    computed.value
                   );
                 }
 
-                // Replace string
-                const value = data[computedField.name].replace(
+                const value = data[computed.name].replace(
                   `$${resField}`,
                   data[resField]
                 );
 
                 set(
                   response,
-                  `data.${this.mainDefinitionName}.${computedField.name}`,
+                  `data.${this.mainDefinitionName}.${computed.name}`,
                   value
                 );
               });
