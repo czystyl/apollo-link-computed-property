@@ -1,22 +1,22 @@
 version: 2
 
 test-defaults: &test-defaults
-  working_directory: ~/graphql-directive-uid
+  working_directory: ~/apollo-link-computed-property
   steps:
     - attach_workspace:
-        at: ~/graphql-directive-uid
+        at: ~/apollo-link-computed-property
     - run: |
         yarn lint
         yarn test
 jobs:
   install-dependencies:
-    working_directory: ~/graphql-directive-uid
+    working_directory: ~/apollo-link-computed-property
     docker:
       - image: circleci/node:6
     steps:
       - checkout
       - attach_workspace:
-          at: ~/graphql-directive-uid
+          at: ~/apollo-link-computed-property
       - restore_cache:
           keys:
             - dependencies-{{ checksum "yarn.lock" }}
@@ -28,12 +28,12 @@ jobs:
       - persist_to_workspace:
           root: .
           paths: .
-  
+
   lint-and-test-node-6:
     <<: *test-defaults
     docker:
       - image: circleci/node:6
-  
+
   lint-and-test-node-8:
     <<: *test-defaults
     docker:
@@ -45,12 +45,12 @@ jobs:
       - image: circleci/node:9
 
   publish:
-    working_directory: ~/graphql-directive-uid
+    working_directory: ~/apollo-link-computed-property
     docker:
       - image: circleci/node:6
     steps:
       - attach_workspace:
-          at: ~/graphql-directive-uid
+          at: ~/apollo-link-computed-property
       - run: |
           npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
           npm publish
