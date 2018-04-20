@@ -1,6 +1,6 @@
 # apollo-link-computed-property
 
-## This project is under hard active development !!
+## This project is under heavy active development !!
 
 [![Version][version-badge]][package]
 [![downloads][downloads-badge]][npmtrends]
@@ -9,9 +9,9 @@
 
 ## Introduction
 
-Apollo link for support `@computed` directive on client side.
+Apollo link for `@computed` directive support on client side.
 
-> Also can check this directive for [the server](https://github.com/czystyl/apollo-link-computed-property).
+> Check this directive for the [server](https://github.com/czystyl/apollo-link-computed-property) side.
 
 # Table of Contents
 
@@ -51,7 +51,7 @@ client.query({
       me {
         firstName
         lastName
-        fullName @computed(value: "Mr/Mis $firstName && $lastName")
+        fullName @computed(value: "$firstName $lastName")
       }
     }
   `,
@@ -64,12 +64,11 @@ Directive params:
 
 ### `value`: String
 
-The calculated value. It can contain other fields from the type in which it is defined.
+The computed value. It can contain fields defined within the current type.
 
 Example:
 
 `@computed(value: "$firstName $lastName")`
-
 `@computed(value: "$price $")`
 
 ## Contributing
