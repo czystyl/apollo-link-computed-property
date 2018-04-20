@@ -29,10 +29,7 @@ class ComputedPropertyLink extends ApolloLink {
       this.mainDefinitionName = definition.name.value;
       const fieldsFromDocument = definition.selectionSet.selections;
 
-      const fields = fieldsFromDocument.map(
-        this._getDirectiveDefinitionFromField
-      );
-      return fields;
+      return fieldsFromDocument.map(this._getDirectiveDefinitionFromField);
     }
 
     return null;
