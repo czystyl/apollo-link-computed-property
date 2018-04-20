@@ -34,6 +34,8 @@
     "nodemon": "^1.17.3"
   },
   "dependencies": {
+    "lodash.flatten": "^4.4.0",
+    "lodash.get": "^4.4.2",
     "lodash.set": "^4.3.2"
   }
 }
