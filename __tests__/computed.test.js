@@ -89,5 +89,5 @@ test('return computed property for nested type', async () => {
   expect(response.data.me.department.access).toEqual(
     'Access to Security: 1111'
   );
-  // expect(response).toMatchSnapshot();
+  expect(response).toMatchSnapshot();
 });
