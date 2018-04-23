@@ -81,6 +81,27 @@ class ComputedPropertyLink extends ApolloLink {
     return this._getComputedFields(mainDefinition);
   }
 
+  _transformResponse(response, settings) {
+    const { data } = response;
+
+    flatten(settings).forEach(computed => {
+      if (!data[computed.name]) {
+        set(response, `data.${computed.name}`, computed.value);
+      }
+
+      const regexp = /\$(\w+\.)+\w+/g;
+
+      const value = computed.value.replace(
+        regexp,
+        match => get(data, match.substring(1)) // remove $
+      );
+
+      set(response, `data.${computed.name}`, value);
+    });
+
+    return response;
+  }
+
   request(operation, forward) {
     if (!this._hasComputedDirective(operation.query)) {
       return forward(operation);
@@ -95,24 +116,7 @@ class ComputedPropertyLink extends ApolloLink {
 
       return obs.subscribe({
         next: response => {
-          const { data } = response;
-
-          flatten(directiveSetting).forEach(computed => {
-            if (!data[computed.name]) {
-              set(response, `data.${computed.name}`, computed.value);
-            }
-
-            const regexp = /\$(\w+\.)+\w+/g;
-
-            const value = computed.value.replace(
-              regexp,
-              match => get(data, match.substring(1)) // remove $
-            );
-
-            set(response, `data.${computed.name}`, value);
-          });
-
-          observer.next(response);
+          observer.next(this._transformResponse(response, directiveSetting));
         },
       });
     });
