@@ -17,3 +17,28 @@ Object {
   "stale": false,
 }
 `;
+
+exports[`return computed property for nested type 1`] = `
+Object {
+  "data": Object {
+    "me": Object {
+      "__typename": "User",
+      "department": Object {
+        "__typename": "Department",
+        "access": "Access to Security: 1111",
+        "code": 1111,
+        "name": "Security",
+        Symbol(id): "$ROOT_QUERY.me.department",
+      },
+      "firstName": "John",
+      "fullName": "John Doe",
+      "lastName": "Doe",
+      Symbol(id): "$ROOT_QUERY.me",
+    },
+    Symbol(id): "ROOT_QUERY",
+  },
+  "loading": false,
+  "networkStatus": 7,
+  "stale": false,
+}
+`;

@@ -6,10 +6,16 @@ const typeDefs = `
     expire: String
   }
 
+  type Department {
+    name: String!
+    code: Int!
+  }
+
   type User {
     firstName: String!
     lastName: String!
     permissions: [Permissions]
+    department: Department
   }
 
   type Query {
@@ -29,6 +35,10 @@ const resolvers = {
       { name: 'ADMIN', expire: '12-12-2018' },
       { name: 'USER', expire: null },
     ],
+    department: () => ({
+      name: 'Security',
+      code: 1111,
+    }),
   },
 };
 

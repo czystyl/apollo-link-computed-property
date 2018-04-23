@@ -51,7 +51,7 @@ client.query({
       me {
         firstName
         lastName
-        fullName @computed(value: "$firstName $lastName")
+        fullName @computed(value: "$me.firstName $me.lastName")
       }
     }
   `,
@@ -66,10 +66,12 @@ Directive params:
 
 The computed value. It can contain fields defined within the current type.
 
+> Remember to add prefix with the name of query root level
+
 Example:
 
-`@computed(value: "$firstName $lastName")`
-`@computed(value: "$price $")`
+`@computed(value: "$me.firstName $me.lastName")`
+`@computed(value: "$product.price $")`
 
 ## Contributing
 
@@ -83,7 +85,7 @@ Run yarn test (try `--watch` flag) for unit tests (we are using Jest)
 ## TODO:
 
 * [ ] Add types
-* [ ] Support for computing nested fields
+* [x] Support for computing nested fields
 * [ ] Support fragments
 
 # LICENSE

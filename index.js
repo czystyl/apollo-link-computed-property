@@ -1,5 +1,7 @@
 const { ApolloLink, Observable } = require('apollo-link');
 const set = require('lodash.set');
+const get = require('lodash.get');
+const flatten = require('lodash.flatten');
 const {
   removeDirectivesFromDocument,
   getDirectivesFromDocument,
@@ -15,9 +17,18 @@ class ComputedPropertyLink extends ApolloLink {
     this.mainDefinitionName = '';
   }
 
-  _getDirectiveDefinitionFromField(field) {
+  _getDirectiveDefinitionFromField(mainDefinitionName, field) {
+    if (field.kind === 'Field' && field.selectionSet) {
+      return field.selectionSet.selections.map(subField =>
+        this._getDirectiveDefinitionFromField(
+          `${mainDefinitionName}.${field.name.value}`,
+          subField
+        )
+      );
+    }
+
     return {
-      name: field.name.value,
+      name: `${mainDefinitionName}.${field.name.value}`,
       value: field.directives[0].arguments[0].value.value,
     };
   }
@@ -29,7 +40,11 @@ class ComputedPropertyLink extends ApolloLink {
       this.mainDefinitionName = definition.name.value;
       const fieldsFromDocument = definition.selectionSet.selections;
 
-      return fieldsFromDocument.map(this._getDirectiveDefinitionFromField);
+      const mainDefinitionName = definition.name.value;
+
+      return fieldsFromDocument.map(field =>
+        this._getDirectiveDefinitionFromField(mainDefinitionName, field)
+      );
     }
 
     return null;
@@ -60,9 +75,31 @@ class ComputedPropertyLink extends ApolloLink {
     checkDocument(doc);
 
     const onlyDirectiveDeclaration = this._getDirectivesFromDoc(doc);
+
     const mainDefinition = getMainDefinition(onlyDirectiveDeclaration);
 
     return this._getComputedFields(mainDefinition);
+  }
+
+  _transformResponse(response, settings) {
+    const { data } = response;
+
+    flatten(settings).forEach(computed => {
+      if (!data[computed.name]) {
+        set(response, `data.${computed.name}`, computed.value);
+      }
+
+      const regexp = /\$(\w+\.)+\w+/g;
+
+      const value = computed.value.replace(
+        regexp,
+        match => get(data, match.substring(1)) // remove $
+      );
+
+      set(response, `data.${computed.name}`, value);
+    });
+
+    return response;
   }
 
   request(operation, forward) {
@@ -79,34 +116,7 @@ class ComputedPropertyLink extends ApolloLink {
 
       return obs.subscribe({
         next: response => {
-          const data = response.data[this.mainDefinitionName];
-
-          for (const resField in data) {
-            if (Object.prototype.hasOwnProperty.call(data, resField)) {
-              directiveSetting.forEach(computed => {
-                if (!data[computed.name]) {
-                  set(
-                    response,
-                    `data.${this.mainDefinitionName}.${computed.name}`,
-                    computed.value
-                  );
-                }
-
-                const value = data[computed.name].replace(
-                  `$${resField}`,
-                  data[resField]
-                );
-
-                set(
-                  response,
-                  `data.${this.mainDefinitionName}.${computed.name}`,
-                  value
-                );
-              });
-            }
-          }
-
-          observer.next(response);
+          observer.next(this._transformResponse(response, directiveSetting));
         },
       });
     });
