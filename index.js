@@ -1,7 +1,5 @@
 const { ApolloLink, Observable } = require('apollo-link');
-const set = require('lodash.set');
-const get = require('lodash.get');
-const flatten = require('lodash.flatten');
+const _ = require('lodash');
 const {
   removeDirectivesFromDocument,
   getDirectivesFromDocument,
@@ -75,28 +73,24 @@ class ComputedPropertyLink extends ApolloLink {
     checkDocument(doc);
 
     const onlyDirectiveDeclaration = this._getDirectivesFromDoc(doc);
-
     const mainDefinition = getMainDefinition(onlyDirectiveDeclaration);
 
     return this._getComputedFields(mainDefinition);
   }
 
-  _transformResponse(response, settings) {
-    const { data } = response;
-
-    flatten(settings).forEach(computed => {
-      if (!data[computed.name]) {
-        set(response, `data.${computed.name}`, computed.value);
+  _applayDirective(response, settings) {
+    settings.forEach(computed => {
+      if (Array.isArray(computed)) {
+        return this._applayDirective(response, computed);
       }
 
-      const regexp = /\$(\w+\.)+\w+/g;
-
-      const value = computed.value.replace(
-        regexp,
-        match => get(data, match.substring(1)) // remove $
+      _.set(
+        response,
+        `data.${computed.name}`,
+        computed.value.replace(/\$(\w+\.)+\w+/g, match =>
+          _.get(response, `data.${match.substring(1)}`)
+        )
       );
-
-      set(response, `data.${computed.name}`, value);
     });
 
     return response;
@@ -116,7 +110,7 @@ class ComputedPropertyLink extends ApolloLink {
 
       return obs.subscribe({
         next: response => {
-          observer.next(this._transformResponse(response, directiveSetting));
+          observer.next(this._applayDirective(response, directiveSetting));
         },
       });
     });

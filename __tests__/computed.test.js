@@ -91,3 +91,67 @@ test('return computed property for nested type', async () => {
   );
   expect(response).toMatchSnapshot();
 });
+
+// test for nested array type
+test.skip('return computed property for nested array type', async () => {
+  nock('http://localhost:3003', { encodedQueryParams: true })
+    .post('/graphql')
+    .reply(200, {
+      data: {
+        me: {
+          firstName: 'John',
+          lastName: 'Doe',
+          department: { code: 1111, __typename: 'Department' },
+          permissions: [
+            {
+              name: 'ADMIN',
+              from: '12-12-2018',
+              to: null,
+              __typename: 'Permissions',
+            },
+            {
+              name: 'USER',
+              from: '20-02-2018',
+              to: '12-12-2018',
+              __typename: 'Permissions',
+            },
+          ],
+          __typename: 'User',
+        },
+      },
+    });
+
+  const response = await client.query({
+    query: gql`
+      {
+        me {
+          firstName
+          lastName
+          department {
+            code
+          }
+          permissions {
+            keys {
+              to
+              code
+              help
+                @computed(
+                  value: "User $me.permissions.keys.code to open $me.permissions.keys.to"
+                )
+            }
+            name
+            from
+            to
+            text
+              @computed(
+                value: "$me.firstName are to $me.permissions.name from: $me.permissions.from to: $me.permissions.to"
+              )
+          }
+        }
+      }
+    `,
+  });
+
+  console.log(response);
+  // expect(response).toMatchSnapshot();
+});
