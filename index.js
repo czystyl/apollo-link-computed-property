@@ -16,19 +16,21 @@ class ComputedPropertyLink extends ApolloLink {
   }
 
   _getDirectiveDefinitionFromField(mainDefinitionName, field) {
-    if (field.kind === 'Field' && field.selectionSet) {
-      return field.selectionSet.selections.map(subField =>
-        this._getDirectiveDefinitionFromField(
-          `${mainDefinitionName}.${field.name.value}`,
-          subField
-        )
-      );
-    }
+    if (field.kind === 'Field') {
+      if (field.selectionSet) {
+        return field.selectionSet.selections.map(subField =>
+          this._getDirectiveDefinitionFromField(
+            `${mainDefinitionName}.${field.name.value}`,
+            subField
+          )
+        );
+      }
 
-    return {
-      name: `${mainDefinitionName}.${field.name.value}`,
-      value: field.directives[0].arguments[0].value.value,
-    };
+      return {
+        name: `${mainDefinitionName}.${field.name.value}`,
+        value: field.directives[0].arguments[0].value.value,
+      };
+    }
   }
 
   _getComputedFields(mainDefinition) {
@@ -84,13 +86,15 @@ class ComputedPropertyLink extends ApolloLink {
         return this._applayDirective(response, computed);
       }
 
-      _.set(
-        response,
-        `data.${computed.name}`,
-        computed.value.replace(/\$(\w+\.)+\w+/g, match =>
-          _.get(response, `data.${match.substring(1)}`)
-        )
-      );
+      if (computed) {
+        _.set(
+          response,
+          `data.${computed.name}`,
+          computed.value.replace(/\$(\w+\.)+\w+/g, match =>
+            _.get(response, `data.${match.substring(1)}`)
+          )
+        );
+      }
     });
 
     return response;

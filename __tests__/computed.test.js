@@ -92,7 +92,34 @@ test('return computed property for nested type', async () => {
   expect(response).toMatchSnapshot();
 });
 
-// test for nested array type
+test('computed property with fragments', async () => {
+  nock('http://localhost:3003', { encodedQueryParams: true })
+    .post('/graphql')
+    .reply(200, {
+      data: {
+        me: { firstName: 'John', lastName: 'Doe', __typename: 'User' },
+      },
+    });
+
+  const response = await client.query({
+    query: gql`
+      query {
+        me {
+          ...Name
+          fullName @computed(value: "$me.firstName $me.lastName")
+        }
+      }
+
+      fragment Name on User {
+        firstName
+        lastName
+      }
+    `,
+  });
+
+  expect(response).toMatchSnapshot();
+});
+
 test.skip('return computed property for nested array type', async () => {
   nock('http://localhost:3003', { encodedQueryParams: true })
     .post('/graphql')
@@ -152,6 +179,5 @@ test.skip('return computed property for nested array type', async () => {
     `,
   });
 
-  console.log(response);
-  // expect(response).toMatchSnapshot();
+  expect(response).toMatchSnapshot();
 });
