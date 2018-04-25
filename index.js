@@ -3,7 +3,7 @@ const _ = require('lodash');
 const { removeDirectivesFromDocument } = require('apollo-utilities');
 const { mapObject, genConfigFromDoc, setComputedProperty } = require('./utils');
 
-const computedLint = new ApolloLink((operation, forwart) => {
+const computedLink = new ApolloLink((operation, forward) => {
   const operationDefinition = _.get(operation, 'query.definitions').find(
     definition => definition.kind === 'OperationDefinition'
   );
@@ -17,7 +17,7 @@ const computedLint = new ApolloLink((operation, forwart) => {
     operation.query
   );
 
-  return forwart(operation).map(response => {
+  return forward(operation).map(response => {
     mapObject(config, (val, key, obj) => {
       setComputedProperty(val, key, obj, response);
     });
@@ -28,4 +28,4 @@ const computedLint = new ApolloLink((operation, forwart) => {
   });
 });
 
-module.exports = computedLint;
+module.exports = computedLink;
