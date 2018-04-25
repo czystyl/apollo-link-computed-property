@@ -1,39 +1,7 @@
 const { ApolloLink } = require('apollo-link');
 const _ = require('lodash');
 const { removeDirectivesFromDocument } = require('apollo-utilities');
-
-const genConfigFromDoc = tree =>
-  tree.reduce((acc, field) => {
-    if (field.kind === 'Field' && field.selectionSet) {
-      acc[field.name.value] = genConfigFromDoc(field.selectionSet.selections);
-    }
-
-    if (field.directives && field.directives.length > 0) {
-      const directive = field.directives
-        .find(d => d.name.value === 'computed')
-        .arguments.find(arg => arg.name.value === 'value');
-
-      acc[field.name.value] = directive.value.value;
-    }
-
-    return acc;
-  }, {});
-
-const mapObject = (obj, fn) =>
-  _.mapValues(
-    obj,
-    (v, k) => (_.isObject(v) ? mapObject(v, fn) : fn(v, k, obj))
-  );
-
-const setComputedProperty = (val, key, obj, data) => {
-  _.set(
-    obj,
-    key,
-    val.replace(/\$(\w+\.)+\w+/g, match =>
-      _.get(data, `data.${match.substring(1)}`)
-    )
-  );
-};
+const { mapObject, genConfigFromDoc, setComputedProperty } = require('./utils');
 
 const computedLint = new ApolloLink((operation, forwart) => {
   const operationDefinition = _.get(operation, 'query.definitions').find(
@@ -49,14 +17,14 @@ const computedLint = new ApolloLink((operation, forwart) => {
     operation.query
   );
 
-  return forwart(operation).map(data => {
+  return forwart(operation).map(response => {
     mapObject(config, (val, key, obj) => {
-      setComputedProperty(val, key, obj, data);
+      setComputedProperty(val, key, obj, response);
     });
 
-    _.merge(data, { data: config });
+    _.merge(response, { data: config });
 
-    return data;
+    return response;
   });
 });
 
