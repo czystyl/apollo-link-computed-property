@@ -1,124 +1,63 @@
-const { ApolloLink, Observable } = require('apollo-link');
+const { ApolloLink } = require('apollo-link');
 const _ = require('lodash');
-const {
-  removeDirectivesFromDocument,
-  getDirectivesFromDocument,
-  hasDirectives,
-  getMainDefinition,
-  checkDocument,
-} = require('apollo-utilities');
+const { removeDirectivesFromDocument } = require('apollo-utilities');
 
-class ComputedPropertyLink extends ApolloLink {
-  constructor(name = 'computed') {
-    super();
-    this.directiveName = name;
-    this.mainDefinitionName = '';
-  }
-
-  _getDirectiveDefinitionFromField(mainDefinitionName, field) {
-    if (field.kind === 'Field') {
-      if (field.selectionSet) {
-        return field.selectionSet.selections.map(subField =>
-          this._getDirectiveDefinitionFromField(
-            `${mainDefinitionName}.${field.name.value}`,
-            subField
-          )
-        );
-      }
-
-      return {
-        name: `${mainDefinitionName}.${field.name.value}`,
-        value: field.directives[0].arguments[0].value.value,
-      };
-    }
-  }
-
-  _getComputedFields(mainDefinition) {
-    if (mainDefinition.selectionSet) {
-      const definition = mainDefinition.selectionSet.selections[0];
-
-      this.mainDefinitionName = definition.name.value;
-      const fieldsFromDocument = definition.selectionSet.selections;
-
-      const mainDefinitionName = definition.name.value;
-
-      return fieldsFromDocument.map(field =>
-        this._getDirectiveDefinitionFromField(mainDefinitionName, field)
-      );
+const genConfigFromDoc = tree =>
+  tree.reduce((acc, field) => {
+    if (field.kind === 'Field' && field.selectionSet) {
+      acc[field.name.value] = genConfigFromDoc(field.selectionSet.selections);
     }
 
-    return null;
-  }
+    if (field.directives && field.directives.length > 0) {
+      const directive = field.directives
+        .find(d => d.name.value === 'computed')
+        .arguments.find(arg => arg.name.value === 'value');
 
-  _hasComputedDirective(doc) {
-    checkDocument(doc);
+      acc[field.name.value] = directive.value.value;
+    }
 
-    return hasDirectives([this.directiveName], doc);
-  }
+    return acc;
+  }, {});
 
-  _removeDirective(doc) {
-    checkDocument(doc);
+const mapObject = (obj, fn) =>
+  _.mapValues(
+    obj,
+    (v, k) => (_.isObject(v) ? mapObject(v, fn) : fn(v, k, obj))
+  );
 
-    return removeDirectivesFromDocument(
-      [{ name: this.directiveName, remove: true }],
-      doc
-    );
-  }
+const setComputedProperty = (val, key, obj, data) => {
+  _.set(
+    obj,
+    key,
+    val.replace(/\$(\w+\.)+\w+/g, match =>
+      _.get(data, `data.${match.substring(1)}`)
+    )
+  );
+};
 
-  _getDirectivesFromDoc(doc) {
-    checkDocument(doc);
+const computedLint = new ApolloLink((operation, forwart) => {
+  const operationDefinition = _.get(operation, 'query.definitions').find(
+    definition => definition.kind === 'OperationDefinition'
+  );
 
-    return getDirectivesFromDocument([{ name: this.directiveName }], doc);
-  }
+  const config = genConfigFromDoc(
+    _.get(operationDefinition, ['selectionSet', 'selections'])
+  );
 
-  _getDirectiveSettings(doc) {
-    checkDocument(doc);
+  operation.query = removeDirectivesFromDocument(
+    [{ name: 'computed', remove: true }],
+    operation.query
+  );
 
-    const onlyDirectiveDeclaration = this._getDirectivesFromDoc(doc);
-    const mainDefinition = getMainDefinition(onlyDirectiveDeclaration);
-
-    return this._getComputedFields(mainDefinition);
-  }
-
-  _applayDirective(response, settings) {
-    settings.forEach(computed => {
-      if (Array.isArray(computed)) {
-        return this._applayDirective(response, computed);
-      }
-
-      if (computed) {
-        _.set(
-          response,
-          `data.${computed.name}`,
-          computed.value.replace(/\$(\w+\.)+\w+/g, match =>
-            _.get(response, `data.${match.substring(1)}`)
-          )
-        );
-      }
+  return forwart(operation).map(data => {
+    mapObject(config, (val, key, obj) => {
+      setComputedProperty(val, key, obj, data);
     });
 
-    return response;
-  }
+    _.merge(data, { data: config });
 
-  request(operation, forward) {
-    if (!this._hasComputedDirective(operation.query)) {
-      return forward(operation);
-    }
+    return data;
+  });
+});
 
-    const directiveSetting = this._getDirectiveSettings(operation.query);
-
-    operation.query = this._removeDirective(operation.query);
-
-    return new Observable(observer => {
-      const obs = forward(operation);
-
-      return obs.subscribe({
-        next: response => {
-          observer.next(this._applayDirective(response, directiveSetting));
-        },
-      });
-    });
-  }
-}
-
-module.exports = new ComputedPropertyLink();
+module.exports = computedLint;
