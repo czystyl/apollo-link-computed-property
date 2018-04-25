@@ -1,9 +1,16 @@
 const { makeExecutableSchema } = require('graphql-tools');
 
 const typeDefs = `
+  type Key {
+    to: String!
+    code: Int!
+  }
+
   type Permissions {
     name: String!
-    expire: String
+    from: String!
+    to: String
+    keys: [Key]
   }
 
   type Department {
@@ -32,8 +39,18 @@ const resolvers = {
   },
   User: {
     permissions: () => [
-      { name: 'ADMIN', expire: '12-12-2018' },
-      { name: 'USER', expire: null },
+      {
+        name: 'ADMIN',
+        from: '12-12-2018',
+        to: null,
+        keys: [{ to: 'front-door', code: 6 }, { to: 'room-2', code: 32 }],
+      },
+      {
+        name: 'USER',
+        from: '20-02-2018',
+        to: '12-12-2018',
+        keys: [{ to: 'back-door', code: 3 }, { to: 'room-1', code: 111 }],
+      },
     ],
     department: () => ({
       name: 'Security',

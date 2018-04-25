@@ -1,5 +1,23 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`computed property with fragments 1`] = `
+Object {
+  "data": Object {
+    "me": Object {
+      "__typename": "User",
+      "firstName": "John",
+      "fullName": "John Doe",
+      "lastName": "Doe",
+      Symbol(id): "$ROOT_QUERY.me",
+    },
+    Symbol(id): "ROOT_QUERY",
+  },
+  "loading": false,
+  "networkStatus": 7,
+  "stale": false,
+}
+`;
+
 exports[`return computed property 1`] = `
 Object {
   "data": Object {
@@ -15,6 +33,15 @@ Object {
   "loading": false,
   "networkStatus": 7,
   "stale": false,
+}
+`;
+
+exports[`return computed property for nested array type 1`] = `
+Object {
+  "data": null,
+  "loading": false,
+  "networkStatus": 7,
+  "stale": true,
 }
 `;
 
