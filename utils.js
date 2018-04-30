@@ -1,10 +1,10 @@
-const _ = require('lodash');
+const mapValues = require('lodash/mapValues');
+const set = require('lodash/set');
+const get = require('lodash/get');
+const isObject = require('lodash/isObject');
 
 const mapObject = (obj, fn) =>
-  _.mapValues(
-    obj,
-    (v, k) => (_.isObject(v) ? mapObject(v, fn) : fn(v, k, obj))
-  );
+  mapValues(obj, (v, k) => (isObject(v) ? mapObject(v, fn) : fn(v, k, obj)));
 
 const genConfigFromDoc = tree =>
   tree.reduce((acc, field) => {
@@ -24,11 +24,11 @@ const genConfigFromDoc = tree =>
   }, {});
 
 const setComputedProperty = (val, key, obj, data) => {
-  _.set(
+  set(
     obj,
     key,
     val.replace(/\$(\w+\.)+\w+/g, match =>
-      _.get(data, `data.${match.substring(1)}`)
+      get(data, `data.${match.substring(1)}`)
     )
   );
 };

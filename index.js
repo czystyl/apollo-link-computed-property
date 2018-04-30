@@ -1,15 +1,16 @@
 const { ApolloLink } = require('apollo-link');
-const _ = require('lodash');
+const get = require('lodash/get');
+const merge = require('lodash/merge');
 const { removeDirectivesFromDocument } = require('apollo-utilities');
 const { mapObject, genConfigFromDoc, setComputedProperty } = require('./utils');
 
-const computedLink = new ApolloLink((operation, forward) => {
-  const operationDefinition = _.get(operation, 'query.definitions').find(
+const computedLint = new ApolloLink((operation, forwart) => {
+  const operationDefinition = get(operation, 'query.definitions').find(
     definition => definition.kind === 'OperationDefinition'
   );
 
   const config = genConfigFromDoc(
-    _.get(operationDefinition, ['selectionSet', 'selections'])
+    get(operationDefinition, ['selectionSet', 'selections'])
   );
 
   operation.query = removeDirectivesFromDocument(
@@ -17,15 +18,15 @@ const computedLink = new ApolloLink((operation, forward) => {
     operation.query
   );
 
-  return forward(operation).map(response => {
+  return forwart(operation).map(response => {
     mapObject(config, (val, key, obj) => {
       setComputedProperty(val, key, obj, response);
     });
 
-    _.merge(response, { data: config });
+    merge(response, { data: config });
 
     return response;
   });
 });
 
-module.exports = computedLink;
+module.exports = computedLint;
